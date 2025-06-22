@@ -5,25 +5,31 @@ import { View,
     SafeAreaView, 
     FlatList,
     TextInput } from 'react-native';
+import { useEffect, useState } from 'react';
 import AntDesign from '@expo/vector-icons/AntDesign';
+import * as SQLite from 'expo-sqlite';
+
+const db = SQLite.openDatabaseSync('myDatabase.db');
 
 export default function Home ( {navigation}) {
+    const [ filterStarters, setFilterStarters] = useState(false);
+    const [ menuList, setMenuList ] = useState(null);
 
-    const menuItemsToDisplay = [
+    useEffect( ()=> {
+        fetch('https://raw.githubusercontent.com/Meta-Mobile-Developer-PC/Working-With-Data-API/main/capstone.json')
+        .then(response => response.json())
+        .then(data => {
+            setMenuList(data.menu);
+        })
+    },[])
 
-        { name: 'Hummus', price: '$5.00', id: '1A' },
-
-        { name: 'Moutabal', price: '$5.00', id: '2B' },
-
-        { name: 'Falafel', price: '$7.50', id: '3C' },
-
-        { name: 'Marinated Olives', price: '$5.00', id: '4D' },
-
-        { name: 'Kofta', price: '$5.00', id: '5E' },
-
-        { name: 'Eggplant Salad', price: '$8.50', id: '6F' },
-    ];
-
+    const images = {
+        'Greek Salad': require('../assets/Greek salad.png'),
+        'Bruschetta': require('../assets/Bruschetta.png'),
+        'Grilled Fish': require('../assets/Grilled fish.png'),
+        'Pasta' : require('../assets/Pasta.png'),
+        'Lemon Dessert' : require('../assets/Lemon dessert.png'),
+    }
     
     const styleButtom = {
         backgroundColor:'#dcdddc',
@@ -33,18 +39,14 @@ export default function Home ( {navigation}) {
         borderRadius:10,
         margin:5
     };
-
     const styleButtomPress = {
         backgroundColor:'#ece942',
     }
-
     const styleButtomText = {
         color:'#507355', 
         fontSize:15, 
         fontWeight:'bold'
     }
-
-
     const styleTextInput = {
         borderWidth:1,
         marginTop:10,
@@ -54,21 +56,24 @@ export default function Home ( {navigation}) {
         backgroundColor:'#dcdcdc'
     }
 
-    const Item = ({name})=> (
+    const Item = ({name, description, price})=> (
         <View style={{ padding:15, height:100}}>
             <Text style={{fontSize:20}}>{name}</Text>
             <View style={{flex:1, flexDirection:'row'}}>
-                <View style={{flex:3, paddingTop:8, paddingBottom:8, paddingRight:5}}>
-                    <Text numberOfLines={2}>The famous greek slad of crispy lettuce,peppers, Olenes and more</Text>
-                    <Text style={{fontSize:20, opacity:0.3, fontWeight:'bold'}}>$12</Text>
+                <View style={{flex:3, paddingBottom:8, paddingRight:5}}>
+                    <Text numberOfLines={2}>{description}</Text>
+                    <Text style={{fontSize:20, opacity:0.3, fontWeight:'bold'}}>${price}</Text>
                 </View>
                 <View style={{flex:1}}>
-                    <Image source={require('../assets/Pasta.png')} style={{height:'100%', width:'100%', borderRadius:5}}/>
+                    <Image source={images[name]} style={{height:'100%', width:'100%', borderRadius:5}}/>
                 </View>
             </View>
         </View>
     )
-    const renderItem = ({item})=> <Item name={item.name}/>
+    const renderItem = ({item})=> <Item name={item.name} 
+                                        description={item.description}
+                                        price={item.price}
+                                    />
 
     return (
         <SafeAreaView style={{flex:1}}>
@@ -97,8 +102,15 @@ export default function Home ( {navigation}) {
                     />
                 </View>
             </View>
+            <View style={{paddingTop:10, paddingLeft:10}}>
+                <Text style={{fontSize:20, fontWeight:'bold'}}>ORDER FOR DELIVERY!</Text>
+            </View>
             <View style={{flex:0.2, flexDirection:'row'}}>
-                <Pressable style={({pressed})=> [styleButtom, {flex:1}, pressed && styleButtomPress]}>
+                <Pressable 
+                    style={[styleButtom, {flex:1}, filterStarters && styleButtomPress]}
+                    onPress={()=>{
+                        setFilterStarters(!filterStarters);
+                    }}>
                     <Text style={styleButtomText}>Starters</Text>
                 </Pressable>
                 <Pressable style={({pressed})=> [styleButtom, {flex:1}, pressed && styleButtomPress]}>
@@ -112,7 +124,7 @@ export default function Home ( {navigation}) {
                 </Pressable>
             </View>
             <View style={{flex:2}}>
-                <FlatList data={menuItemsToDisplay} renderItem={renderItem} ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: '#507355', marginHorizontal: 10 }} />}/>
+                <FlatList data={menuList} renderItem={renderItem} ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: '#507355', marginHorizontal: 10 }} />}/>
             </View>
         </SafeAreaView>
     );

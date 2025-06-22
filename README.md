@@ -1,0 +1,1 @@
+tengo que aser el filter y curos de node adn express

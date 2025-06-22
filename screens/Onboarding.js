@@ -57,8 +57,8 @@ export default function Onboarding ({ navigation }){
                 <View style={{ backgroundColor:'#b2bbb0', flex: 1}}>
 
                     <View style={{justifyContent:'center', alignItems:'center'}}>
-                        <Text style={{fontSize:25, alignSelf:'center', padding:20}}>Let us get to know you!</Text>
                         <Image source={require('../assets/head_chef.jpg')} style={{width:'100%', height:250}}/>
+                        <Text style={{fontSize:25, alignSelf:'center', padding:20}}>Let us get to know you!</Text>
                     </View>
                     <View style={{padding: 30}}>
                         
