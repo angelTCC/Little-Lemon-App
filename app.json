@@ -27,6 +27,18 @@
     },
     "plugins": [
       "expo-sqlite"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "990db8ea-645e-4f1d-ae6f-d1223e75ff80"
+      }
+    },
+    "owner": "angeltcc",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/990db8ea-645e-4f1d-ae6f-d1223e75ff80"
+    }
   }
 }
