@@ -1,10 +1,12 @@
 
 # 🍋 Little Lemon App
 
-<img src='https://shields.io/badge/supabase-black?logo=supabase&style=for-the-badge%22'/> 
-<img src='https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=SQLite&logoColor=white' />
-<img src='https://img.shields.io/badge/Expo-000000?logo=Expo&logoColor=white' />
-<img src='https://img.shields.io/badge/-React_Native-05122A?style=flat&logo=react' />
+<p align="center">
+  <img src='https://shields.io/badge/supabase-black?logo=supabase'/>
+  <img src='https://img.shields.io/badge/SQLite-003B57?logo=SQLite' />
+  <img src='https://img.shields.io/badge/Expo-000000?&logo=Expo&logoColor=white' />
+  <img src='https://img.shields.io/badge/-React_Native-05122A?logo=react&logoColor=61DAFB' />
+</p>
 
 A mobile app for the restaurant Little Lemon. In this app, you can register and customize your profile. You can browse the menu and discover the dishes that interest you most. The app includes filters to help you find what you like—for example, starters, mains, desserts, or drinks. You can also search by typing keywords in a bar.
 
@@ -17,7 +19,7 @@ To preview the app on your phone, follow these steps:
 
 <p align="center">
   <a>
-    <img src="qr-app.svg" width="40%" alt="QR code to preview the app">
+    <img src="qr-app.svg" width="30%" alt="QR code to preview the app">
   </a>
 </p>
 
@@ -46,7 +48,7 @@ Follow these steps to get the project running locally:
     ```
     npx expo start
     ```
-    
+
 ## ✨ Features
 
 - 🔐 User authentication system (name + email)
@@ -57,8 +59,9 @@ Follow these steps to get the project running locally:
 
 ## 🚧 Upcoming Features
 
-* 📦 **Publish to Google Play & App Store**
-  Use **EAS Build** and **EAS Submit** to generate production-ready APK and IPA files and publish them to app marketplaces for wider public access.
+- 🛒 **Order Online**: Place orders directly from the app with a smooth checkout experience.  
+- 📦 **Publish to Google Play & App Store**: Use **EAS Build** and **EAS Submit** to generate production-ready APK and IPA files for wider public access.
+
 
 ## 🧑‍💻 Author
 
