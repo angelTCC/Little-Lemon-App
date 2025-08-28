@@ -10,6 +10,7 @@ import {
     View
 } from 'react-native';
 import Checkbox from 'expo-checkbox';
+import { supabase } from '../lib/supabase';
 
 export default function Profile() {
     const styleButtom = {
@@ -30,6 +31,15 @@ export default function Profile() {
     const [email, setEmail] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [statusCheck, setStatusCheck] = useState(false);
+
+    async function handleLogout() {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            Alert.alert("Error", error.message);
+        } else {
+            Alert.alert("Signed out", "You have been logged out successfully");
+        }
+    }
 
     return (
         <KeyboardAvoidingView
@@ -121,7 +131,8 @@ export default function Profile() {
                 </View>
 
                 <View style={{padding:10}}>
-                    <Pressable style={({pressed})=>[styleButtom, {width:'80%'}, pressed && styleButtomPress]} >
+                    <Pressable style={({pressed})=>[styleButtom, {width:'80%'}, pressed && styleButtomPress]} 
+                        onPress={handleLogout} >
                         <Text>Log out</Text>
                     </Pressable>
                 </View>
