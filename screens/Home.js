@@ -4,20 +4,27 @@ import { View,
     Image, 
     SafeAreaView, 
     FlatList,
-    TextInput } from 'react-native';
+    TextInput, 
+    StyleSheet,
+    ActivityIndicator,
+    Alert} from 'react-native';
 import { useEffect, useState, useRef } from 'react';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import * as SQLite from 'expo-sqlite';
+import { supabase } from '../lib/supabase';
+import { Ionicons } from "@expo/vector-icons";
 
 const db = SQLite.openDatabaseSync('little_lemon.db');
 
 export default function Home () {
+
     const categories = ['starters', 'mains', 'desserts', 'drinks'];
     const [ filters, setFilters ] = useState([false, false, false, false]);
     const [ menuList, setMenuList ] = useState([]);
-    const isInitialRender = useRef(true); 
+    const [ dbReady, setDbReady] = useState(false);
+    const [ searchText, setSearchText ] = useState('');
 
-    //start the database 
+    {/* Init the database, if data is empty (no rows), get data from supabase */}
     useEffect(() => {
         const initDatabase = async () => {
             try {
@@ -32,7 +39,7 @@ export default function Home () {
                     );
                 `);
                 console.log('✅ Database initiated');
-
+                //await db.execAsync(`DELETE FROM menu`);
                 const result = await db.getFirstAsync(`SELECT COUNT(*) as count FROM menu`);
                 const count = result.count;
 
@@ -40,12 +47,12 @@ export default function Home () {
                     console.log(`✅ Rows found: ${count}`);
                     const result = await db.getAllAsync('SELECT * FROM menu');
                     setMenuList(result);
-                    console.log('data from database',count)
                 } else {
                     console.log('🆕 No data in table. Fetching from API...');
                     await fetchAndStoreData();
                     console.log('Data Fetched and store')
                 }
+                setDbReady(true);
             } catch (error) {
                 console.error('initDatabase or checkData error:', error);
             }
@@ -53,98 +60,146 @@ export default function Home () {
         initDatabase();
     }, []);
 
-    // nothing in the database then fetch
+    // Function to get data from Supabase, store the data in database local
     const fetchAndStoreData = async () => {
         try {
+            
+            {/*}
+            // data set demo
             const response = await fetch('https://raw.githubusercontent.com/Meta-Mobile-Developer-PC/Working-With-Data-API/main/capstone.json');
             const json = await response.json();
             setMenuList(json.menu);
-            for (const row of json.menu ) {
+            console.log(json.menu);
+            // json.menu -> data
+            */}
+
+            const { data, error } = await supabase.from("menu").select("*");
+            if (error) {
+                console.error("❌ Supabase error:", error.message);
+            } else {
+                console.log("✅ Successful connection to supabase");
+            }
+            
+            // store data in sqlite, local database
+            for (const row of data ) {
                 await db.runAsync(
                     `INSERT INTO menu (name, price, description, image, category) VALUES (?, ?, ?, ?, ?)`,
                     [row.name, row.price, row.description, row.image, row.category]
                 );
             };
+
             const allRows = await db.getFirstAsync(`SELECT COUNT(*) as count FROM menu`) ;
-            console.log('num of rows after fetch', allRows.count)            
+            console.log('num of rows after fetch', allRows.count) 
+
         } catch (error) {
             console.error('error in fetching', error)
         };
     }
 
-
-    // Filter logic - skip first render
+    // Filter logic after the database is ready: filer by word and category
     useEffect(() => {
-        if (isInitialRender.current) {
-            isInitialRender.current = false;
-            return;  // Skip the first render
-        }
+         if (!dbReady) return;
 
-        const selectedCategories = categories.filter((_, i) => filters[i]);
         const filterData = async () => {
             try {
+
                 let result;
-                if (selectedCategories.length === 0) {
-                    result = await db.getAllAsync(`SELECT * FROM menu`);
-                } else {
-                    const placeholders = selectedCategories.map(() => '?').join(', ');
-                    const query = `SELECT * FROM menu WHERE category IN (${placeholders})`;
-                    result = await db.getAllAsync(query, selectedCategories);
+                let query = 'SELECT * FROM menu';
+                let conditions = [];
+                let params = [];
+                const selectedCategories = categories.filter((_, i) => filters[i]);
+
+                // filter by category -----
+                if (selectedCategories.length > 0) {
+                    const placeholders = selectedCategories.map(() => '?').join(', '); // '?,?,?'
+                    conditions.push( `category IN (${placeholders})` );
+                    params.push(...selectedCategories)
                 }
+
+                // filter by word --------
+                if (searchText.trim() != '') {
+                    conditions.push(`(name LIKE ? OR description LIKE ?)`)
+                    params.push(`%${searchText}%`, `%${searchText}%` )
+                }
+
+                // query -----------------
+                if (conditions.length > 0) {
+                    query += ' WHERE ' + conditions.join(" AND ");
+                }
+                result = await db.getAllAsync(query, params);
+
                 setMenuList(result);
+                {/* 
+                    SELECT * FROM menu 
+                    WHERE category IN (?, ?) AND (name LIKE ? OR description LIKE ?)
+                */}
+
             } catch(error) {
                 console.error('Filter error:', error);
             }
         };
         
         filterData();
-    }, [filters]);
 
+    }, [filters, searchText, dbReady]);
+
+    // Changing the filter state
     const toggleFilterAtIndex = (index) => {
         const updated = [...filters];
         updated[index] = !filters[index];
         setFilters(updated);
     };
 
-    const styleButtom = {
-        backgroundColor:'#dcdddc',
-        padding:5,
-        alignItems:'center',
-        alignSelf:'center',
-        borderRadius:10,
-        margin:5
-    };
-    const styleButtomPress = {
-        backgroundColor:'#ece942',
-    }
-    const styleButtomText = {
-        color:'#507355', 
-        fontSize:15, 
-        fontWeight:'bold'
-    }
-    const styleTextInput = {
-        borderWidth:1,
-        marginTop:10,
-        padding:10,
-        fontSize:18,
-        borderRadius:10,
-        backgroundColor:'#dcdcdc'
-    }
+    {/* List menu */}
+    const Item = ({name, description, price, image})=> {
+        
+        const [loadingImg, setLoadingImg] = useState(true);
 
-    const Item = ({name, description, price, image})=> (
-        <View style={{ padding:15, height:100}}>
-            <Text style={{fontSize:20}}>{name}</Text>
-            <View style={{flex:1, flexDirection:'row'}}>
-                <View style={{flex:3, paddingBottom:8, paddingRight:5}}>
-                    <Text numberOfLines={2}>{description}</Text>
-                    <Text style={{fontSize:20, opacity:0.3, fontWeight:'bold'}}>${price}</Text>
+        // return random img if the dishes is not found
+        const [imgUri, setImgUri] = useState(
+            `https://github.com/Meta-Mobile-Developer-PC/Working-With-Data-API/blob/main/images/${image}?raw=true`
+        );
+        const handleError = async () => {
+            try {
+                setLoadingImg(true);
+                const response = await fetch(`https://www.themealdb.com/api/json/v1/1/random.php`);
+                const data = await response.json();
+                setImgUri(data.meals[0].strMealThumb);
+            } catch (err) {
+                console.error("Fallback fetch failed:", err);
+            } finally {
+            };
+        };
+
+            return (
+                <View style={{ padding:15, height:100}}>
+                    <Text style={{fontSize:20}}>{name}</Text>
+                    <View style={{flex:1, flexDirection:'row'}}>
+                        <View style={{flex:3, paddingBottom:8, paddingRight:5}}>
+                            <Text numberOfLines={2}>{description}</Text>
+                            <Text style={{fontSize:20, opacity:0.3, fontWeight:'bold'}}>${price}</Text>
+                        </View>
+                        <View style={{flex:1, 
+                            justifyContent: "center",
+                            alignItems: "center",}}>
+                            <Image 
+                                source={{uri: imgUri}} 
+                                style={{height:'100%', width:'100%', borderRadius:5}}
+                                onError={handleError}
+                                onLoadStart={() => setLoadingImg(true)}
+                                onLoadEnd={() => setLoadingImg(false)}/>
+                            {loadingImg && (
+                                <ActivityIndicator
+                                size="small"
+                                color="#0000ff"
+                                style={{ position: "absolute" }}
+                                />
+                            )}
+                        </View>
+                    </View>
                 </View>
-                <View style={{flex:1}}>
-                    <Image source={{uri: `https://github.com/Meta-Mobile-Developer-PC/Working-With-Data-API/blob/main/images/${image}?raw=true`}} style={{height:'100%', width:'100%', borderRadius:5}}/>
-                </View>
-            </View>
-        </View>
-    )
+            )
+    };
     const renderItem = ({item})=> <Item name={item.name} 
                                         description={item.description}
                                         price={item.price}
@@ -157,9 +212,11 @@ export default function Home () {
             {/** GREEN SECTION ------------------------------------------------- */}
 
             <View  style={{flex:1.2, backgroundColor:'#507355', padding:15}}>
+                
                 <View style={{flex:0.3}}>
                     <Text style={{fontSize:50, color:'#ece942'}}>Little Lemon</Text>
                 </View>
+
                 <View style={{flex:1, flexDirection:'row'}}>
                     <View style={{flex:1}}>
                         <Text style={{fontSize:30, color:'white'}}>Chicago</Text>
@@ -170,16 +227,27 @@ export default function Home () {
                         <Image source={require('../assets/Hero image.png')} style={{width:'80%', height:'80%', borderRadius:20}}/>
                     </View>
                 </View>
-                <View style={{flex:0.3, justifyContent:'center', flexDirection:'row', alignItems:'center', marginTo5:10}}>
-                    <Pressable style={{flex:0.1, paddingTop:10}}>
-                        <View style={{alignItems:'center'}}>
-                            <AntDesign name="search1" size={25} color="white"/>
-                        </View>
+
+                {/* Search by keyword ---------------------- */}
+                <View style={[styles.textInput,{flexDirection:'row'}]}>
+                    {/*
+                    <Pressable 
+                        onPress={ () => searchMenu(searchText) }
+                        style={{flex:0.1, paddingTop:10}}>
+                        
                     </Pressable>
+                    */}
+                    <View style={{justifyContent:'center', alignItems:'center', flex:1}}>
+                        <Ionicons name="search-outline" size={15} color="black"/>
+                    </View>
                     <TextInput
-                        style= {[styleTextInput,{flex:1}]}
+                        style= {[{flex:15}]}
+                        value= {searchText}
+                        placeholder='Search food'
+                        onChangeText = {setSearchText}
                     />
                 </View>
+
             </View>
             <View style={{paddingTop:10, paddingLeft:10}}>
                 <Text style={{fontSize:20, fontWeight:'bold'}}>ORDER FOR DELIVERY!</Text>
@@ -189,35 +257,34 @@ export default function Home () {
 
             <View style={{flex:0.2, flexDirection:'row'}}>
                 <Pressable 
-                    style={[styleButtom, {flex:1}, filters[0] && styleButtomPress]}
+                    style={[styles.buttom, {flex:1}, filters[0] && styles.buttomPress]}
                     onPress={()=>{
                         toggleFilterAtIndex(0);
                     }}>
-                    <Text style={styleButtomText}>Starters</Text>
+                    <Text style={styles.buttomText}>Starters</Text>
                 </Pressable>
                 <Pressable 
-                    style={[styleButtom, {flex:1}, filters[1] && styleButtomPress]}
+                    style={[styles.buttom, {flex:1}, filters[1] && styles.buttomPress]}
                     onPress={() => {
                         toggleFilterAtIndex(1);
                     }}
                 >
-                    <Text style={styleButtomText}>Mains</Text>
+                    <Text style={styles.buttomText}>Mains</Text>
                 </Pressable>
-
                 <Pressable 
-                    style={[styleButtom, {flex:1}, filters[2] && styleButtomPress]}
+                    style={[styles.buttom, {flex:1}, filters[2] && styles.buttomPress]}
                     onPress={()=>{
                         toggleFilterAtIndex(2);
                     }
                     }>
-                    <Text style={styleButtomText}>Desserts</Text>
+                    <Text style={styles.buttomText}>Desserts</Text>
                 </Pressable>
                 <Pressable 
-                    style={[styleButtom, {flex:1}, filters[3] && styleButtomPress]}
+                    style={[styles.buttom, {flex:1}, filters[3] && styles.buttomPress]}
                     onPress={()=>{
                         toggleFilterAtIndex(3);
                     }}>
-                    <Text style={styleButtomText}>Drinks</Text>
+                    <Text style={styles.buttomText}>Drinks</Text>
                 </Pressable>
             </View>
             
@@ -235,3 +302,30 @@ export default function Home () {
         </SafeAreaView>
     );
 }
+
+const styles = StyleSheet.create({
+    buttom:{
+        backgroundColor:'#dcdddc',
+        padding:5,
+        alignItems:'center',
+        alignSelf:'center',
+        borderRadius:10,
+        margin:5
+    },
+    buttomPress: {
+        backgroundColor:'#ece942',
+    },
+    buttomText: {
+        color:'#507355', 
+        fontSize:15, 
+        fontWeight:'bold'
+    },
+    textInput:{
+        borderWidth:1,
+        //marginTop:10,
+        padding:10,
+        fontSize:18,
+        borderRadius:10,
+        backgroundColor:'#dcdcdc'
+    }
+})

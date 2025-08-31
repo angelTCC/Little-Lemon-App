@@ -1,11 +1,11 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Image, Pressable, ActivityIndicator, View } from 'react-native';
+import { Image, Pressable, ActivityIndicator, View, StyleSheet } from 'react-native';
 import { useState, useEffect } from 'react';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 import { supabase } from './lib/supabase';
-import Onboarding from './screens/Onboarding';
+//import Onboarding from './screens/Onboarding';
 import Home from './screens/Home';
 import Profile from './screens/Profile';
 import Auth from './screens/Auth';
@@ -86,9 +86,13 @@ export default function App() {
   
           
         </> ) : (
-          <Stack.Screen name='Auth' component={ Auth }/>
+          <Stack.Screen name='Auth' component={ Auth } options={{ headerShown: false }}/>
         )}
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
+
+const styles= StyleSheet.create({
+
+})

@@ -1,6 +1,12 @@
-import { Text, 
+import { 
+    Text, 
     Image,
-    TextInput, KeyboardAvoidingView, ScrollView, Platform, Pressable, View } from 'react-native';
+    TextInput, 
+    KeyboardAvoidingView, 
+    ScrollView, Platform, 
+    Pressable, 
+    View 
+    } from 'react-native';
 import { useState } from 'react';
 
 export default function Onboarding ({ navigation }){ 
